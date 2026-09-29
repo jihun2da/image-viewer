@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>제품 이미지 비교 뷰어 (최종 완성본)</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
+        
+        .header { background-color: #2c3e50; padding: 15px; text-align: center; }
+        .view-controls { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #455a64; display: flex; justify-content: center; gap: 15px; }
+        .photo-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+        .btn { border: none; padding: 8px 20px; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        
+        .photo-btn { background-color: #ecf0f1; color: #2c3e50; }
+        .photo-btn:hover { background-color: #bdc3c7; }
+        .photo-btn.active { background-color: #e74c3c; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        
+        .toggle-btn { background-color: #f39c12; color: white; padding: 10px 30px; font-size: 16px; }
+        .toggle-btn:hover { background-color: #e67e22; }
+
+        .transform-btn { background-color: #9b59b6; color: white; padding: 10px 30px; font-size: 16px; }
+        .transform-btn:hover { background-color: #8e44ad; }
+
+        /* 화면을 하나만 꽉 차게 쓰도록 메인 레이아웃 단순화 */
+        .main-container { display: flex; flex: 1; padding: 30px; justify-content: center; overflow: hidden; }
+        .view-frame { flex: 1; max-width: 1200px; /* 너무 넓어지지 않도록 최대 넓이 제한 */ background-color: white; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        h2 { text-align: center; font-size: 18px; color: #333; margin: 15px 0 0; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        
+        .slider-wrap { position: relative; flex: 1; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; }
+        .slider-items { display: flex; width: 400%; height: 100%; flex-shrink: 0; transition: transform 0.4s ease-out; }
+        .comparison-item { width: 25%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; position: relative; }
+        .style-badge { position: absolute; top: 25px; left: 25px; background-color: rgba(52, 73, 94, 0.9); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 2; }
+        .comparison-item img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+        
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.4); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; font-weight: bold; cursor: pointer; z-index: 10; transition: background-color 0.2s; }
+        .slider-btn:hover { background-color: rgba(0, 0, 0, 0.8); }
+        .prev-btn { left: 20px; } .next-btn { right: 20px; }
+
+        .view-frame.grid-mode .slider-wrap { overflow-y: auto; align-items: flex-start; }
+        .view-frame.grid-mode .slider-items { width: 100%; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; box-sizing: border-box; transform: translateX(0) !important; transition: none; }
+        .view-frame.grid-mode .comparison-item { width: 100%; height: auto; padding: 0; }
+        .view-frame.grid-mode .slider-btn { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="view-controls">
+            <button class="btn toggle-btn" id="toggle-view-btn" onclick="toggleViewMode()">전체 바둑판 보기</button>
+            <button class="btn transform-btn" id="toggle-ext-btn" onclick="toggleExtension()">수정본 보기 (.png)</button>
+        </div>
+        <div class="photo-controls">
+            <button class="btn photo-btn active" id="btn-1" onclick="changePhoto(1)">사진 1</button>
+            <button class="btn photo-btn" id="btn-2" onclick="changePhoto(2)">사진 2</button>
+            <button class="btn photo-btn" id="btn-3" onclick="changePhoto(3)">사진 3</button>
+            <button class="btn photo-btn" id="btn-4" onclick="changePhoto(4)">사진 4</button>
+            <button class="btn photo-btn" id="btn-5" onclick="changePhoto(5)">사진 5</button>
+            <button class="btn photo-btn" id="btn-6" onclick="changePhoto(6)">사진 6</button>
+            <button class="btn photo-btn" id="btn-7" onclick="changePhoto(7)">사진 7</button>
+            <button class="btn photo-btn" id="btn-8" onclick="changePhoto(8)">사진 8</button>
+            <button class="btn photo-btn" id="btn-9" onclick="changePhoto(9)">사진 9</button>
+            <button class="btn photo-btn" id="btn-10" onclick="changePhoto(10)">사진 10</button>
+        </div>
+    </div>
+
+    <!-- 모바일 화면 삭제 후 단일 화면으로 통합 -->
+    <div class="main-container">
+        <div class="view-frame main-view">
+            <h2>메인 이미지 뷰어</h2>
+            <div class="slider-wrap">
+                <button class="slider-btn prev-btn" onclick="prevStyle()">&#10094;</button>
+                <button class="slider-btn next-btn" onclick="nextStyle()">&#10095;</button>
+                <!-- 자바스크립트가 사진을 넣을 공간 -->
+                <div id="main-slider-items" class="slider-items"></div> 
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPhotoNum = 1; 
+        let currentStyleIndex = 0; 
+        let isGridView = false; 
+        let isModifiedMode = false; 
+
+        function toggleExtension() {
+            isModifiedMode = !isModifiedMode; 
+            const extBtn = document.getElementById('toggle-ext-btn');
+
+            if(isModifiedMode) {
+                extBtn.innerText = "현재 상태: 수정본 (.png) - 원본으로 돌아가기";
+                extBtn.style.backgroundColor = "#c0392b"; 
+            } else {
+                extBtn.innerText = "수정본 보기 (.png)";
+                extBtn.style.backgroundColor = "#9b59b6"; 
+            }
+            changePhoto(currentPhotoNum); 
+        }
+
+        function changePhoto(photoNum) {
+            currentPhotoNum = photoNum; 
+            currentStyleIndex = 0; 
+            
+            for(let i = 1; i <= 10; i++) { document.getElementById('btn-' + i).classList.remove('active'); }
+            document.getElementById('btn-' + photoNum).classList.add('active');
+            
+            let imagesHtml = '';
+            const fileExtension = isModifiedMode ? 'png' : 'jpg';
+
+            for(let style = 1; style <= 4; style++) {
+                const imgSrc = `images/style${style}/${photoNum}.${fileExtension}`; 
+                imagesHtml += `<div class="comparison-item"><div class="style-badge">스타일 ${style}</div><img src="${imgSrc}" alt="사진 ${photoNum} 스타일 ${style}"></div>`;
+            }
+            
+            // 모바일 로직 삭제 후 메인 화면에만 사진 주입
+            document.getElementById('main-slider-items').innerHTML = imagesHtml;
+            
+            if(!isGridView) { updateSliders(true); }
+        }
+
+        function toggleViewMode() {
+            isGridView = !isGridView;
+            const mainView = document.querySelector('.main-view');
+            const toggleBtn = document.getElementById('toggle-view-btn');
+
+            if(isGridView) {
+                mainView.classList.add('grid-mode');
+                toggleBtn.innerText = "한 장씩 슬라이드로 보기";
+                toggleBtn.style.backgroundColor = "#27ae60"; 
+            } else {
+                mainView.classList.remove('grid-mode');
+                toggleBtn.innerText = "전체 바둑판 보기";
+                toggleBtn.style.backgroundColor = "#f39c12"; 
+                updateSliders(true); 
+            }
+        }
+
+        function prevStyle() { if(isGridView) return; currentStyleIndex = (currentStyleIndex - 1 + 4) % 4; updateSliders(); }
+        function nextStyle() { if(isGridView) return; currentStyleIndex = (currentStyleIndex + 1) % 4; updateSliders(); }
+        
+        function updateSliders(immediate = false) {
+            const offset = currentStyleIndex * 25; 
+            const mainSlider = document.getElementById('main-slider-items'); 
+            
+            if(immediate) { mainSlider.style.transition = 'none'; } 
+            else { mainSlider.style.transition = 'transform 0.4s ease-out'; }
+            
+            mainSlider.style.transform = `translateX(-${offset}%)`;
+        }
+
+        window.onload = function() { changePhoto(1); };
+    </script>
+</body>
+</html>
