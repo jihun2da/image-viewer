@@ -5,50 +5,35 @@
     <title>제품 이미지 비교 뷰어 (로컬 폴더 연동형)</title>
     <style>
         body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
-        
         .header { background-color: #2c3e50; padding: 15px; text-align: center; }
-        
-        /* [새로 추가된 디자인] 폴더 업로드 영역 */
         .upload-controls { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #7f8c8d; color: white; }
         .folder-input-label { display: inline-block; background-color: #27ae60; color: white; padding: 10px 30px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
         .folder-input-label:hover { background-color: #2ecc71; }
-        #folder-input { display: none; /* 실제 파일 입력창은 숨기고 예쁜 라벨 버튼만 노출 */ }
+        #folder-input { display: none; }
         .upload-status { margin-top: 10px; font-size: 14px; color: #bdc3c7; }
-
         .view-controls { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #455a64; display: flex; justify-content: center; gap: 15px; }
         .photo-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-
         .btn { border: none; padding: 8px 20px; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-        
         .photo-btn { background-color: #ecf0f1; color: #2c3e50; }
         .photo-btn:hover { background-color: #bdc3c7; }
         .photo-btn.active { background-color: #e74c3c; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .photo-btn:disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; } /* 비활성화 상태 */
-        
+        .photo-btn:disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; } 
         .toggle-btn { background-color: #f39c12; color: white; padding: 10px 30px; font-size: 16px; }
         .toggle-btn:hover { background-color: #e67e22; }
-
         .transform-btn { background-color: #9b59b6; color: white; padding: 10px 30px; font-size: 16px; }
         .transform-btn:hover { background-color: #8e44ad; }
-
         .main-container { display: flex; flex: 1; padding: 30px; justify-content: center; overflow: hidden; }
         .view-frame { flex: 1; max-width: 1200px; background-color: white; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         h2 { text-align: center; font-size: 18px; color: #333; margin: 15px 0 0; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        
         .slider-wrap { position: relative; flex: 1; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; }
         .slider-items { display: flex; width: 400%; height: 100%; flex-shrink: 0; transition: transform 0.4s ease-out; }
         .comparison-item { width: 25%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; position: relative; background-color: #fafafa; }
-        
-        /* 사진이 없을 때 안내 문구 */
         .no-image-text { color: #95a5a6; font-size: 16px; text-align: center; }
-
         .style-badge { position: absolute; top: 25px; left: 25px; background-color: rgba(52, 73, 94, 0.9); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 2; }
         .comparison-item img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
-        
         .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.4); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; font-weight: bold; cursor: pointer; z-index: 10; transition: background-color 0.2s; }
         .slider-btn:hover { background-color: rgba(0, 0, 0, 0.8); }
         .prev-btn { left: 20px; } .next-btn { right: 20px; }
-
         .view-frame.grid-mode .slider-wrap { overflow-y: auto; align-items: flex-start; }
         .view-frame.grid-mode .slider-items { width: 100%; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; box-sizing: border-box; transform: translateX(0) !important; transition: none; }
         .view-frame.grid-mode .comparison-item { width: 100%; height: auto; padding: 0; }
@@ -56,22 +41,17 @@
     </style>
 </head>
 <body>
-
     <div class="header">
-        <!-- [새로 추가된 기능] 로컬 폴더 업로드 제어부 -->
         <div class="upload-controls">
             <label for="folder-input" class="folder-input-label">📁 PC에서 'images' 폴더 선택하기</label>
-            <!-- webkitdirectory 속성이 폴더째 선택할 수 있게 해주는 핵심입니다 -->
             <input type="file" id="folder-input" webkitdirectory directory multiple onchange="handleFolderSelect(event)">
             <div class="upload-status" id="upload-status-text">아직 폴더가 선택되지 않았습니다.</div>
         </div>
-
         <div class="view-controls">
             <button class="btn toggle-btn" id="toggle-view-btn" onclick="toggleViewMode()">전체 바둑판 보기</button>
             <button class="btn transform-btn" id="toggle-ext-btn" onclick="toggleExtension()">수정본 보기 (.png)</button>
         </div>
         <div class="photo-controls">
-            <!-- 초기에는 버튼을 비활성화(disabled) 해둡니다 -->
             <button class="btn photo-btn" id="btn-1" onclick="changePhoto(1)" disabled>사진 1</button>
             <button class="btn photo-btn" id="btn-2" onclick="changePhoto(2)" disabled>사진 2</button>
             <button class="btn photo-btn" id="btn-3" onclick="changePhoto(3)" disabled>사진 3</button>
@@ -84,7 +64,6 @@
             <button class="btn photo-btn" id="btn-10" onclick="changePhoto(10)" disabled>사진 10</button>
         </div>
     </div>
-
     <div class="main-container">
         <div class="view-frame main-view">
             <h2>메인 이미지 뷰어</h2>
@@ -92,7 +71,6 @@
                 <button class="slider-btn prev-btn" onclick="prevStyle()">&#10094;</button>
                 <button class="slider-btn next-btn" onclick="nextStyle()">&#10095;</button>
                 <div id="main-slider-items" class="slider-items">
-                    <!-- 기본 대기 화면 -->
                     <div style="width: 100%; display: flex; justify-content: center; align-items: center; color: #7f8c8d; font-size: 18px; font-weight: bold;">
                         상단의 초록색 버튼을 눌러 촬영 원본이 있는 폴더를 선택해 주세요.
                     </div>
@@ -100,54 +78,43 @@
             </div>
         </div>
     </div>
-
     <script>
         let currentPhotoNum = 1; 
         let currentStyleIndex = 0; 
         let isGridView = false; 
         let isModifiedMode = false; 
-        
-        // [핵심] 컴퓨터에서 불러온 파일들의 가상 주소를 분류해서 저장하는 서랍장
-        let localFilesDb = {
-            'style1': {}, 'style2': {}, 'style3': {}, 'style4': {}
-        };
+        let localFilesDb = { 'style1': {}, 'style2': {}, 'style3': {}, 'style4': {} };
 
-        // 사용자가 폴더를 선택했을 때 실행되는 함수
         function handleFolderSelect(event) {
             const files = event.target.files;
             if (files.length === 0) return;
 
-            // 서랍장 초기화
             localFilesDb = { 'style1': {}, 'style2': {}, 'style3': {}, 'style4': {} };
             let loadedCount = 0;
 
             for(let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const path = file.webkitRelativePath; // 예: images/style1/1.jpg
-                const fileName = file.name; // 예: 1.jpg
+                // [핵심 수정] 폴더 경로와 파일 이름을 모두 소문자로 강제 변환하여 저장합니다. (예: 1.JPG -> 1.jpg)
+                const path = file.webkitRelativePath.toLowerCase(); 
+                const fileName = file.name.toLowerCase(); 
 
-                // 경로에 특정 스타일 이름이 포함되어 있으면 해당 서랍장에 가상 주소 저장
                 if(path.includes('style1/')) { localFilesDb['style1'][fileName] = URL.createObjectURL(file); loadedCount++; }
                 else if(path.includes('style2/')) { localFilesDb['style2'][fileName] = URL.createObjectURL(file); loadedCount++; }
                 else if(path.includes('style3/')) { localFilesDb['style3'][fileName] = URL.createObjectURL(file); loadedCount++; }
                 else if(path.includes('style4/')) { localFilesDb['style4'][fileName] = URL.createObjectURL(file); loadedCount++; }
             }
 
-            document.getElementById('upload-status-text').innerText = `성공적으로 ${loadedCount}개의 사진을 인식했습니다!`;
+            document.getElementById('upload-status-text').innerText = `성공적으로 ${loadedCount}개의 사진을 인식했습니다! (대소문자 구별 제거됨)`;
             
-            // 사진 버튼 비활성화 해제
             for(let i = 1; i <= 10; i++) {
                 document.getElementById('btn-' + i).disabled = false;
             }
-
-            // 첫 번째 사진 띄우기
             changePhoto(1);
         }
 
         function toggleExtension() {
             isModifiedMode = !isModifiedMode; 
             const extBtn = document.getElementById('toggle-ext-btn');
-
             if(isModifiedMode) {
                 extBtn.innerText = "현재 상태: 수정본 (.png) - 원본으로 돌아가기";
                 extBtn.style.backgroundColor = "#c0392b"; 
@@ -167,24 +134,20 @@
             
             let imagesHtml = '';
             const fileExtension = isModifiedMode ? 'png' : 'jpg';
-            const targetFileName = `${photoNum}.${fileExtension}`; // 찾을 파일 이름 (예: 1.jpg)
+            const targetFileName = `${photoNum}.${fileExtension}`; 
 
             for(let style = 1; style <= 4; style++) {
                 const styleKey = `style${style}`;
-                
-                // 서랍장에 해당 파일이 있으면 가상 주소를 가져오고, 없으면 비워둠
                 const imgSrc = localFilesDb[styleKey][targetFileName] || ''; 
                 
                 if (imgSrc) {
                     imagesHtml += `<div class="comparison-item"><div class="style-badge">스타일 ${style}</div><img src="${imgSrc}" alt="사진 ${photoNum} 스타일 ${style}"></div>`;
                 } else {
-                    // 파일이 없을 경우 엑스박스 대신 안내 문구 표시
                     imagesHtml += `<div class="comparison-item"><div class="style-badge">스타일 ${style}</div><div class="no-image-text">해당 파일이<br>폴더에 없습니다.<br>(${targetFileName})</div></div>`;
                 }
             }
             
             document.getElementById('main-slider-items').innerHTML = imagesHtml;
-            
             if(!isGridView) { updateSliders(true); }
         }
 
@@ -192,7 +155,6 @@
             isGridView = !isGridView;
             const mainView = document.querySelector('.main-view');
             const toggleBtn = document.getElementById('toggle-view-btn');
-
             if(isGridView) {
                 mainView.classList.add('grid-mode');
                 toggleBtn.innerText = "한 장씩 슬라이드로 보기";
@@ -211,10 +173,8 @@
         function updateSliders(immediate = false) {
             const offset = currentStyleIndex * 25; 
             const mainSlider = document.getElementById('main-slider-items'); 
-            
             if(immediate) { mainSlider.style.transition = 'none'; } 
             else { mainSlider.style.transition = 'transform 0.4s ease-out'; }
-            
             mainSlider.style.transform = `translateX(-${offset}%)`;
         }
     </script>
